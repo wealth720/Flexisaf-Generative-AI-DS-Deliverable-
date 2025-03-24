@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .player-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 300px;
+        }
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        #progress, #volume {
+            width: 100%;
+            margin-top: 10px;
+        }
+        #playlist {
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 5px;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        #playlist div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            cursor: pointer;
+        }
+        #playlist div:hover {
+            background: #e0e0e0;
+        }
+        .active {
+            background: #5a67d8 !important;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-container">
+        <input type="file" id="fileInput" multiple accept="audio/*">
+        <div id="playlist"></div>
+        <audio id="audioPlayer" controls></audio>
+        <div class="controls">
+            <button id="prev">⏮</button>
+            <button id="playPause">▶️</button>
+            <button id="next">⏭</button>
+            <button id="loop">🔁</button>
+            <button id="shuffle">🔀</button>
+        </div>
+        <input type="range" id="progress" value="0">
+        <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
+    </div>
+    <script>
+        const fileInput = document.getElementById("fileInput");
+        const audioPlayer = document.getElementById("audioPlayer");
+        const playPauseBtn = document.getElementById("playPause");
+        const progress = document.getElementById("progress");
+        const volume = document.getElementById("volume");
+        const playlistDiv = document.getElementById("playlist");
+        const prevBtn = document.getElementById("prev");
+        const nextBtn = document.getElementById("next");
+        const loopBtn = document.getElementById("loop");
+        const shuffleBtn = document.getElementById("shuffle");
+
+        let playlist = [];
+        let currentTrackIndex = 0;
+        let isLooping = false;
+
+        fileInput.addEventListener("change", function(event) {
+            playlist = [...event.target.files];
+            if (playlist.length > 0) {
+                loadTrack(0);
+            }
+            updatePlaylistUI();
+        });
+
+        function loadTrack(index) {
+            if (index >= 0 && index < playlist.length) {
+                currentTrackIndex = index;
+                const fileURL = URL.createObjectURL(playlist[index]);
+                audioPlayer.src = fileURL;
+                audioPlayer.play();
+                playPauseBtn.textContent = "⏸";
+                highlightCurrentTrack();
+            }
+        }
+
+        function highlightCurrentTrack() {
+            document.querySelectorAll("#playlist div").forEach((el, idx) => {
+                el.classList.toggle("active", idx === currentTrackIndex);
+            });
+        }
+
+        playPauseBtn.addEventListener("click", function() {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+                playPauseBtn.textContent = "⏸";
+            } else {
+                audioPlayer.pause();
+                playPauseBtn.textContent = "▶️";
+            }
+        });
+
+        nextBtn.addEventListener("click", function() {
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            loadTrack(currentTrackIndex);
+        });
+
+        prevBtn.addEventListener("click", function() {
+            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+            loadTrack(currentTrackIndex);
+        });
+
+        loopBtn.addEventListener("click", function() {
+            isLooping = !isLooping;
+            loopBtn.style.color = isLooping ? "blue" : "white";
+        });
+
+        shuffleBtn.addEventListener("click", function() {
+            playlist.sort(() => Math.random() - 0.5);
+            updatePlaylistUI();
+        });
+
+        audioPlayer.addEventListener("ended", function() {
+            if (isLooping) {
+                loadTrack(currentTrackIndex);
+            } else {
+                nextBtn.click();
+            }
+        });
+
+        function updatePlaylistUI() {
+            playlistDiv.innerHTML = "";
+            playlist.forEach((track, index) => {
+                const trackElement = document.createElement("div");
+                trackElement.textContent = track.name;
+                
+                const removeBtn = document.createElement("button");
+                removeBtn.textContent = "❌";
+                removeBtn.style.marginLeft = "10px";
+                removeBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    playlist.splice(index, 1);
+                    updatePlaylistUI();
+                    if (currentTrackIndex >= playlist.length) {
+                        currentTrackIndex = 0;
+                    }
+                });
+
+                trackElement.appendChild(removeBtn);
+                trackElement.addEventListener("click", () => loadTrack(index));
+                playlistDiv.appendChild(trackElement);
+            });
+            highlightCurrentTrack();
+        }
+    </script>
+</body>
+</html>
